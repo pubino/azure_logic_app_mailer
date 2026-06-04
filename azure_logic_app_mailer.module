@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for Azure Logic App Mailer module.
+ */
+
+/**
+ * Implements hook_mail().
+ */
+function azure_logic_app_mailer_mail($key, &$message, $params) {
+  if ($key === 'test_send') {
+    $message['subject'] = $params['subject'];
+    $message['body'][] = $params['body'];
+  }
+}

@@ -1,0 +1,7 @@
+azure_logic_app_mailer.test_form:
+  path: '/admin/config/system/azure-logic-app-mailer/test'
+  defaults:
+    _form: '\Drupal\azure_logic_app_mailer\Form\TestMailForm'
+    _title: 'Test Azure Logic App Mailer'
+  requirements:
+    _permission: 'administer site configuration'

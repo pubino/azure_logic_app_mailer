@@ -1,0 +1,7 @@
+name: 'Azure Logic App Mailer'
+type: module
+description: 'Sends outbound emails through a secure Azure Logic App.'
+core_version_requirement: ^9 || ^10
+dependencies:
+  - mailsystem:mailsystem
+package: Custom
