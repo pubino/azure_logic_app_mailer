@@ -105,24 +105,31 @@ class LogicAppMailer implements MailInterface, ContainerFactoryPluginInterface {
     if ($response === FALSE) {
       $error = curl_error($ch);
       curl_close($ch);
-      throw new \Exception("cURL request to Managed Identity endpoint failed: " . $error);
+      // Log the presence of key environment variables to help diagnose if they are missing/empty in Apache
+      \Drupal::logger('logic_app_mailer')->warning('Managed Identity Environment Variables in PHP process: IDENTITY_ENDPOINT: @ie, IDENTITY_HEADER set: @ih, MSI_ENDPOINT: @me, MSI_SECRET set: @ms', [
+        '@ie' => $endpoint ?: '(empty)',
+        '@ih' => empty($header) ? 'no' : 'yes',
+        '@me' => getenv('MSI_ENDPOINT') ?: '(empty)',
+        '@ms' => empty(getenv('MSI_SECRET')) ? 'no' : 'yes',
+      ]);
+      throw new \Exception("cURL request to Managed Identity endpoint ($url) failed: " . $error);
     }
     
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     if ($http_code !== 200) {
-      throw new \Exception("Managed Identity token request failed (HTTP Code $http_code): " . $response);
+      throw new \Exception("Managed Identity token request failed (HTTP Code $http_code) for URL ($url): " . $response);
     }
 
     if (empty($response)) {
-      throw new \Exception("Managed Identity endpoint returned an empty response.");
+      throw new \Exception("Managed Identity endpoint ($url) returned an empty response.");
     }
 
     $data = json_decode($response, true);
     $token = $data['access_token'] ?? NULL;
     if (!$token) {
-      throw new \Exception("Access token was not returned in the Managed Identity endpoint response.");
+      throw new \Exception("Access token was not returned in the Managed Identity endpoint response from ($url).");
     }
 
     return $token;
