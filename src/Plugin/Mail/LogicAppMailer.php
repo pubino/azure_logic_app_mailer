@@ -95,24 +95,36 @@ class LogicAppMailer implements MailInterface, ContainerFactoryPluginInterface {
       $headers = ["X-Identity-Header: $header"];
     }
 
-    try {
-      $ch = curl_init();
-      curl_setopt($ch, CURLOPT_URL, $url);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-      $response = curl_exec($ch);
-      $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+    
+    $response = curl_exec($ch);
+    if ($response === FALSE) {
+      $error = curl_error($ch);
       curl_close($ch);
+      throw new \Exception("cURL request to Managed Identity endpoint failed: " . $error);
+    }
+    
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-      if ($http_code === 200 && !empty($response)) {
-        $data = json_decode($response, true);
-        return $data['access_token'] ?? NULL;
-      }
+    if ($http_code !== 200) {
+      throw new \Exception("Managed Identity token request failed (HTTP Code $http_code): " . $response);
     }
-    catch (\Exception $e) {
-      \Drupal::logger('logic_app_mailer')->error('Managed Identity token fetch error: @message', ['@message' => $e->getMessage()]);
+
+    if (empty($response)) {
+      throw new \Exception("Managed Identity endpoint returned an empty response.");
     }
-    return NULL;
+
+    $data = json_decode($response, true);
+    $token = $data['access_token'] ?? NULL;
+    if (!$token) {
+      throw new \Exception("Access token was not returned in the Managed Identity endpoint response.");
+    }
+
+    return $token;
   }
 }
